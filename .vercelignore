@@ -1,0 +1,9 @@
+# Online, Vercel only serves the tool's landing page (index.html) and its icon.
+# The Mac helper and its tests run on the person's own Mac, never on Vercel.
+*.py
+requirements.txt
+test/
+extension/
+studio/
+jobs/
+CREATOR_STUDIO.html
