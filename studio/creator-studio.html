@@ -1,0 +1,1420 @@
+<title>Creator Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* Layout: a fixed tool rail (bottom bar on phones) beside one calm stage; one tally-light accent marks the next action. */
+:root{
+  --bg:#F1F2F4; --surface:#FFFFFF; --sunk:#E8EAED; --ink:#121418; --muted:#6A707A; --line:#DDE0E5;
+  --accent:#E2412B; --accent-ink:#FFFFFF; --ok:#1E9A68; --warn:#C98A12; --oyai:#5E3B22;
+  --shadow:0 1px 2px rgba(18,20,24,.06),0 8px 24px -12px rgba(18,20,24,.18);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --r-lg:24px; --r-md:16px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1012; --surface:#17191D; --sunk:#1F2227; --ink:#ECEDEF; --muted:#8C929B; --line:#2A2E34;
+  --accent:#FF5640; --accent-ink:#FFFFFF; --ok:#3CC48C; --warn:#E7AA36; --oyai:#D9AE85;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1012; --surface:#17191D; --sunk:#1F2227; --ink:#ECEDEF; --muted:#8C929B; --line:#2A2E34;
+  --accent:#FF5640; --accent-ink:#FFFFFF; --ok:#3CC48C; --warn:#E7AA36; --oyai:#D9AE85;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7); color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.app{display:grid;grid-template-columns:112px minmax(0,1fr);height:100%}
+.rail{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0;border-right:1px solid var(--line);background:var(--bg)}
+.mark{width:44px;height:44px;border-radius:12px;display:block;margin-bottom:16px}
+.tab{width:80px;height:80px;border:0;border-radius:22px;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative;transition:background .15s,color .15s}
+.tab small{font-size:12px;font-weight:500;letter-spacing:.01em}
+.tab:hover{color:var(--ink);background:var(--sunk)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.tab .dot{position:absolute;top:14px;right:18px;width:8px;height:8px;border-radius:50%;background:var(--ok);display:none}
+.tab.done .dot{display:block}
+.rail .grow{flex:1}
+
+main{min-width:0;overflow-y:auto;height:100%}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;padding:18px 32px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px)}
+.top h1{font:800 28px/1 var(--display);letter-spacing:-.02em;margin:0;flex:1;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill.on i{background:var(--ok)} .pill.off i{background:var(--warn)}
+.pill.ex{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,var(--line))}
+
+.stage{padding:8px 32px 120px;max-width:1180px}
+section[role="tabpanel"]{display:flex;flex-direction:column;gap:20px}
+
+.btn{height:56px;padding:0 24px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:600;font-size:16px;cursor:pointer;transition:transform .12s,box-shadow .15s,background .15s;white-space:nowrap}
+.btn:hover{box-shadow:var(--shadow)}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 10px 24px -12px var(--accent)}
+.btn.dark{background:var(--ink);color:var(--bg);border-color:transparent}
+.btn.xl{height:72px;padding:0 32px;font-size:18px;border-radius:20px}
+.btn.icon{width:56px;padding:0}
+.btn[disabled]{opacity:.4;pointer-events:none}
+body.busy .ai{opacity:.4;pointer-events:none}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.row .sp{flex:1}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:48px;min-width:56px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .sw{width:14px;height:14px;border-radius:5px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px}
+.label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+.drop{display:grid;place-items:center;gap:14px;min-height:300px;border-radius:28px;background:var(--surface);border:1.5px dashed var(--line);cursor:pointer;text-align:center;padding:32px 16px;transition:border-color .15s,background .15s}
+.drop:hover,body.drag .drop{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--surface))}
+.drop .big{width:72px;height:72px;border-radius:24px;background:var(--sunk);display:grid;place-items:center}
+.drop .big svg{width:32px;height:32px}
+.drop b{font:600 22px/1.2 var(--display);letter-spacing:-.01em}
+.drop span{color:var(--muted);font-size:14px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.stack .btn{width:100%;justify-content:flex-start}
+
+.stat{display:flex;flex-wrap:wrap;gap:24px;align-items:center}
+.stat div{display:flex;flex-direction:column}
+.stat b{font:600 24px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.helper{display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:var(--r-md);background:var(--sunk)}
+.helper p{margin:0;flex:1;min-width:0;font-weight:500}
+.helper small{display:block;color:var(--muted);font-weight:400}
+
+textarea.field,input.field,select.field{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:14px 16px;font-size:15px;line-height:1.5}
+input.field,select.field{height:56px;padding:0 16px}
+textarea.field{min-height:160px;resize:vertical}
+
+/* header: new job */
+.btn.newjob{height:44px;padding:0 18px;border-radius:999px;font-size:14px}
+.btn.newjob.armed{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+@media (max-width:520px){.btn.newjob span{display:none}.btn.newjob{width:44px;padding:0}}
+
+/* link pipeline */
+.linkbar{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 24px;border-radius:28px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.linkbar:focus-within{border-color:var(--ink)}
+.linkbar svg{color:var(--muted)}
+.linkbar input{flex:1;min-width:0;border:0;background:transparent;outline:none;font:500 18px/1.3 var(--body);height:56px}
+.linkbar .btn{border-radius:20px}
+.linkbar .clear{width:44px;height:44px;border:0;border-radius:14px;background:var(--sunk);color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none}
+.linkbar .clear:hover{color:var(--ink)}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.step{display:flex;flex-direction:column;gap:10px;padding:18px 16px;border-radius:20px;background:var(--surface);border:1px solid var(--line);min-width:0}
+.step .ic{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:var(--sunk);color:var(--muted)}
+.step b{font-weight:600;font-size:15px}
+.step small{font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums;min-height:1.2em}
+.step .bar{height:4px;border-radius:2px;background:var(--sunk);overflow:hidden}
+.step .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+.step.active{border-color:var(--accent)}
+.step.active .ic{background:var(--accent);color:var(--accent-ink)}
+.step.done .ic{background:var(--ok);color:#fff}
+.step.done .bar i{width:100%;background:var(--ok)}
+.step.fail{border-color:var(--warn)} .step.fail .ic{background:var(--warn);color:#fff}
+.more{border-radius:var(--r-lg);background:var(--sunk);padding:4px 20px}
+.more summary{cursor:pointer;font-weight:600;padding:14px 0;color:var(--muted)}
+.more[open]{padding-bottom:20px}
+.drop.small{min-height:200px}
+#helperPill.on i{background:var(--ok)} #helperPill.off i{background:var(--warn)}
+@media (max-width:1000px){.steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:520px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}.linkbar{padding-left:16px}.linkbar input{font-size:16px}}
+
+/* subtitles */
+.cues{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.cue{display:grid;grid-template-columns:92px minmax(0,1fr) 44px;gap:16px;padding:14px 20px;border-top:1px solid var(--line);align-items:start}
+.cue:first-child{border-top:0}
+.cue.two{grid-template-columns:92px minmax(0,1fr) minmax(0,1fr) 44px}
+.tc{font:500 13px/1.6 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.txt{outline:none;border-radius:8px;padding:2px 6px;margin:-2px -6px;min-height:1.5em;overflow-wrap:anywhere}
+.txt:focus{background:var(--sunk)}
+.src{color:var(--muted);overflow-wrap:anywhere}
+.cps{font:500 12px/1.9 var(--mono);color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.cps.hot{color:var(--accent)}
+.empty-tr{color:var(--muted);font-style:italic}
+
+/* post */
+.voices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.voice{height:120px;border-radius:24px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:grid;place-items:center;padding:18px;color:var(--ink);transition:box-shadow .15s,transform .12s,border-color .15s}
+.voice:hover{box-shadow:var(--shadow)}
+.voice:active{transform:scale(.98)}
+.voice[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink),var(--shadow)}
+.voice:not([aria-pressed="true"]) .logo{opacity:.55;filter:grayscale(.6)}
+.voice:hover .logo{opacity:1;filter:none}
+.logo{display:block;transition:opacity .15s,filter .15s}
+.logo svg{display:block;width:100%;height:100%}
+.l-pnt{height:64px;aspect-ratio:1330/1140}
+.l-oye{height:30px;aspect-ratio:1148/391}
+.l-oyai{height:60px;aspect-ratio:320/283;background:var(--oyai);-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center}
+.l-lude{font:600 22px/1 var(--display);letter-spacing:-.01em;white-space:nowrap}
+#voiceMini{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#voiceMini .voice{height:84px;border-radius:20px;padding:12px}
+#voiceMini .l-pnt{height:46px} #voiceMini .l-oye{height:22px} #voiceMini .l-oyai{height:44px} #voiceMini .l-lude{font-size:17px}
+.posts{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.post{display:flex;flex-direction:column;gap:12px}
+.post header{display:flex;align-items:center;gap:12px}
+.post header b{flex:1;font:600 18px/1 var(--display)}
+.post .n{font:500 12px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.post .n.over{color:var(--accent)}
+.post .body{white-space:pre-wrap;outline:none;min-height:120px;overflow-wrap:anywhere}
+.statement{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.statement .big{font:800 30px/1.1 var(--display);letter-spacing:-.02em;text-wrap:balance;margin:6px 0 0}
+
+/* frames */
+.timeline{position:relative;height:40px;border-radius:12px;background:var(--sunk);overflow:hidden}
+.timeline i{position:absolute;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--muted);transform:translateX(-50%)}
+.timeline i.on{background:var(--accent);width:5px;top:4px;bottom:4px}
+.timeline .ends{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 12px;font:500 11px var(--mono);color:var(--muted);pointer-events:none}
+.grid10{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.fr{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:14px;overflow:hidden;border:0;padding:0;cursor:pointer;background:var(--sunk)}
+.fr img{width:100%;height:100%;object-fit:cover;display:block}
+.fr span{position:absolute;left:8px;bottom:8px;font:500 11px var(--mono);color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:6px}
+.fr.on{box-shadow:0 0 0 3px var(--accent)}
+.fr.ghost{display:grid;place-items:center;color:var(--muted);font:500 12px var(--mono)}
+.composer{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
+.canvasbox{border-radius:var(--r-lg);overflow:hidden;background:var(--sunk);display:grid;place-items:center}
+.canvasbox canvas{display:block;max-width:100%;height:auto}
+.canvasbox.tall canvas{max-height:72vh;width:auto}
+.why{font-size:14px;color:var(--muted);margin:0}
+
+/* bible */
+.bgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.bgrid .card{display:flex;flex-direction:column;gap:12px}
+.bgrid textarea.field{min-height:220px;font-size:14px}
+.vt{display:grid;gap:12px}
+.vt label{display:flex;align-items:center;height:48px;color:var(--ink)}
+.vt .l-pnt{height:44px} .vt .l-oye{height:20px} .vt .l-oyai{height:42px} .vt .l-lude{font-size:17px}
+.vt textarea.field{min-height:84px}
+
+/* job + toast */
+.job{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:16px;padding:10px 10px 10px 22px;border-radius:999px;background:var(--ink);color:var(--bg);box-shadow:var(--shadow);width:min(520px,calc(100% - 32px))}
+.job b{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.job .track{flex:1;height:6px;border-radius:3px;background:color-mix(in srgb,var(--bg) 25%,transparent);overflow:hidden}
+.job .track i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.job button{height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--bg);color:var(--ink);font-weight:600;cursor:pointer}
+.toast{position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:30;padding:14px 22px;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);font-weight:500;max-width:calc(100% - 32px)}
+video#vid{display:none}
+
+@media (max-width:900px){
+  .split,.composer,.statement,.bgrid{grid-template-columns:minmax(0,1fr)}
+  .voices{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid10{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:fixed;left:0;right:0;bottom:0;z-index:10;flex-direction:row;justify-content:space-around;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--line);gap:0}
+  .rail .mark,.rail .grow{display:none}
+  .tab{width:64px;height:64px;border-radius:18px}
+  .top{padding:14px 16px;top:env(safe-area-inset-top,0px)}
+  .top h1{font-size:22px}
+  .stage{padding:4px 16px 160px}
+  .cue,.cue.two{grid-template-columns:minmax(0,1fr) 40px;gap:6px 12px}
+  .cue .tc{grid-column:1/-1}
+  .cue.two .src{grid-column:1/-1}
+  .job{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+  .btn{padding:0 18px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <nav class="rail" role="tablist" aria-label="Tools">
+    <img class="mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEHElEQVR42u1bW2wMURj+ZqZMK6tS2tqwrVq0PNjSilurSaseqFIeKK2QqBaPaOvyIhISibu4RlQvLnEpGlX3RTzoolaFNmEREpdF251etq3M8iSRmLOz3c4mM6dzHvfL/2e/73znPj8DP9rgcONvqLA1/fjK9DSG0Trp3orB0Ea8p0KwNJP3hQNDK3Ff3cDQQN4+fojk7xNe/pQVgdV6r5LIy2GSDtBS7/tCjuSGf13A0j7u5eY4ljbb9zSGpd36pNi/nFn08aYL0JcmP6nJUHeALoDGmtT2tjexmnSAPyKQYvr8EGC0vgrIbYzk3KJ5B3gj6MtQCbgDOI5Dbs4SbCwuRGRkpE8xnZ2duHipEtt37ITT6dTuEDCbzagoK0FcXKxf8YIgoKh4Ey5crAxcB4UMMGwNROJJkxJxufICoqJMfufgeR4ZGXMgCAKePqvTjgOiokx4YL2LQYNCFcu5aPFS3L1nVf9GiOM4HD922Cv5K1erkDF3PkbHjsMwUwySU1Kxa/dedHV1EWMOHtgLg8GgfgdkZy/CoYP7ifiGwmKUnCqTxBISJqLqyiWEhIRI4oVFG3GypFTdDli7poCInThxkkgeAOrqnmPXnn1EfFlujrodMHXKZFRfuyqJtbW1wTIhES6X4P2IOjgMDa/qERQU9B8miiJM0SPR3f1LnQ5ISZnhddzLkQeApqZmvG5oJM4vZrNZUQcEKZksafo0Ima1PvA5T2raLG0eh8eOjSNiDY2NdN8HMAyDsLAwIv758xe6BQgNHQiO44h4e3s73QLIzcw8z9MtgNvthtvtJuLGoUNVKYCiq8DXb98wMiZGEouNHYP3Hz74lMdkGo4R0dGS2Ju3DkWPyIoKUPvYRhQgOTkJN2/d9ilP4YZ1yM1ZKollzlugqACKLoP3rPeJ2MIF89G/fz/5P8SySJ+ZJomJogj7i3r17gNu3b5D3O0ZjUbkr8qTzbEkezGMRqMk9rjWho6ODvUK0NraisNHjhLxLZs3YVb6TCIeH2/Bju3biHhZWYX6j8MGgwGPHlqJN0GiKOJUaTkqTp+Bw/EOHo8Ho8xmZGVlYnVBPvEo7HC8w4yUVHR1d6v/RshiGY+a6ioEBwcrks/j8WBuZhZqbU+08TRWX/8SeflrvO4LekJ+3fqigJAP6LtATc0NzJ6TiY+fPvmdo7m5BSvzClBecRqauxUGAKfzO0pLy+FyuWCJt2AAYXxL7SrPnjuP5StW4rndDiqexnieR3LSdKSnpyExIQERkRGICA8Hy7JoaWmB8/sP2O122GxPca36OgRBgP42qH8foAugCxBwAfwpMwFFn8/rDtAF8LPaipbqEd0Bvam5o6F2iO1t4aHWC6f0IaBE+SlVZXOgsH7QW6eyShcja610Vi+eRh8vn/8DUEuIGqQLCOAAAAAASUVORK5CYII=" alt="" width="44" height="44">
+    <button class="tab" role="tab" id="t-words" data-tab="words" aria-selected="true"><span class="dot"></span><svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg><small>Link</small></button>
+    <button class="tab" role="tab" id="t-subs" data-tab="subs" aria-selected="false"><span class="dot"></span><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 12h4M14 12h3M7 15h10"/></svg><small>Subtitles</small></button>
+    <button class="tab" role="tab" id="t-frames" data-tab="frames" aria-selected="false"><span class="dot"></span><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l5-4 4 3 3-2 6 4"/><circle cx="15.5" cy="9" r="1.5"/></svg><small>Thumbnail</small></button>
+    <button class="tab" role="tab" id="t-post" data-tab="post" aria-selected="false"><span class="dot"></span><svg class="i" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-3-7z"/></svg><small>Post</small></button>
+    <div class="grow"></div>
+    <button class="tab" role="tab" id="t-bible" data-tab="bible" aria-selected="false"><span class="dot"></span><svg class="i" viewBox="0 0 24 24"><path d="M6 4h10a3 3 0 013 3v13H9a3 3 0 01-3-3z"/><path d="M6 17a3 3 0 013-3h10"/></svg><small>Bible</small></button>
+  </nav>
+
+  <main>
+    <header class="top">
+      <h1 id="h">Link</h1>
+      <span class="pill ex" id="exPill" hidden>Example</span>
+      <span class="pill" id="claudePill"><i></i><span>Claude</span></span>
+      <button class="btn newjob" id="btnNew" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>New job</span></button>
+    </header>
+
+    <div class="stage">
+      <!-- LINK -->
+      <section role="tabpanel" id="p-words">
+        <form class="linkbar" id="linkForm" autocomplete="off">
+          <svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>
+          <input id="linkIn" name="link" type="text" inputmode="url" autocomplete="off" placeholder="Paste a video link or a file path" aria-label="Video link or file path">
+          <button class="clear" id="linkClear" type="button" aria-label="Clear link" hidden><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <button class="btn xl primary" id="btnGo" type="submit">Start</button>
+        </form>
+        <div class="row">
+          <span class="pill" id="helperPill"><i></i><span>Mac helper</span></span>
+          <div class="chips" id="modeChips">
+            <button class="chip" type="button" data-mode="full" aria-pressed="true">Subtitles + posts</button>
+            <button class="chip" type="button" data-mode="raw" aria-pressed="false">Transcript only</button>
+          </div>
+          <span class="sp"></span>
+          <span class="label" id="langLabel">Then translate into</span>
+        </div>
+        <div class="chips" id="langChips2"></div>
+
+        <ol class="steps" id="steps"></ol>
+
+        <details class="more" id="moreBox">
+          <summary>Other ways in</summary>
+          <div class="stack">
+            <div class="split">
+              <label class="drop small" for="fileIn" id="dropWords">
+                <span class="big"><svg class="i" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></span>
+                <b>Drop a file</b>
+                <span>.mp3 · .wav · .srt · .vtt · .txt · video</span>
+              </label>
+              <div class="stack">
+                <button class="btn" id="btnScript" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h3"/></svg>Paste script</button>
+                <button class="btn" id="btnExample" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Example</button>
+              </div>
+            </div>
+            <div class="card" id="scriptBox" hidden>
+              <div class="stack">
+                <textarea class="field" id="scriptIn" placeholder="Paste the text spoken in the video"></textarea>
+                <div class="row"><span class="sp"></span><button class="btn primary" id="btnMake" type="button">Make subtitles</button></div>
+              </div>
+            </div>
+          </div>
+        </details>
+        <input type="file" id="fileIn" accept=".mp3,.wav,.m4a,.srt,.vtt,.txt,audio/*,video/*" hidden>
+
+        <div class="card stat" id="wordsStat"></div>
+      </section>
+
+      <!-- SUBTITLES -->
+      <section role="tabpanel" id="p-subs" hidden>
+        <div class="row">
+          <button class="btn ai" id="btnClean"><svg class="i" viewBox="0 0 24 24"><path d="M4 20l9-9M14 4l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM18 13l.6 1.6 1.4.4-1.4.6L18 17l-.6-1.4L16 15l1.4-.4z"/></svg>Clean</button>
+          <span class="sp"></span>
+          <button class="btn icon" id="btnCopy" title="Copy SRT" aria-label="Copy SRT"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg></button>
+          <button class="btn dark" id="btnExport"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Export .srt</button>
+          <button class="btn dark" id="btnTxt"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h14v16H5zM9 9h6M9 13h6M9 17h3"/></svg>Export .txt</button>
+        </div>
+        <div class="card stack">
+          <div class="row">
+            <span class="label">Spoken</span>
+            <select class="field" id="srcLang" aria-label="Spoken language" style="width:auto;min-width:180px;height:48px"></select>
+          </div>
+          <span class="label">Translate into</span>
+          <div class="chips" id="langChips"></div>
+          <div class="row"><span class="sp"></span><button class="btn primary ai" id="btnTranslate">Translate</button></div>
+        </div>
+        <div class="chips" id="viewChips"></div>
+        <div class="cues" id="cues"></div>
+      </section>
+
+      <!-- POST -->
+      <section role="tabpanel" id="p-post" hidden>
+        <div class="voices" id="voices"></div>
+        <div class="chips" id="platChips"></div>
+        <div class="split">
+          <textarea class="field" id="story" placeholder="Story or angle (optional). The transcript is used either way."></textarea>
+          <div class="stack">
+            <input class="field" id="link" placeholder="Video link">
+            <select class="field" id="postLang" aria-label="Post language"></select>
+            <button class="btn xl primary ai" id="btnWrite">Write posts</button>
+          </div>
+        </div>
+        <div id="postOut" class="stack"></div>
+      </section>
+
+      <!-- FRAMES -->
+      <section role="tabpanel" id="p-frames" hidden>
+        <button class="btn xl primary" id="btnReload" type="button" hidden><svg class="i" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3L20 9M20 4v5h-5M20 12a8 8 0 01-14 5.3L4 15M4 20v-5h5"/></svg>Load frames from the last video</button>
+        <label class="drop" for="vidIn" id="dropVid">
+          <span class="big"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4-2.5z"/></svg></span>
+          <b>Drop the video</b>
+          <span>.mp4 · .webm · .mov</span>
+        </label>
+        <input type="file" id="vidIn" accept="video/*" hidden>
+        <div id="framesOn" class="stack" hidden>
+          <div class="row">
+            <div class="stat" id="vidStat"></div>
+            <span class="sp"></span>
+            <button class="btn" id="btnNewVid">Change video</button>
+            <button class="btn primary" id="btnFind">Find 10 frames</button>
+          </div>
+          <div class="timeline" id="timeline"><div class="ends"><span>0:00</span><span id="tlEnd"></span></div></div>
+          <div class="grid10" id="grid10"></div>
+          <div class="composer" id="composer" hidden>
+            <div class="canvasbox" id="cbox"><canvas id="thumb" width="1280" height="720"></canvas></div>
+            <div class="stack">
+              <div class="chips" id="fmtChips">
+                <button class="chip" data-fmt="169" aria-pressed="true">16:9</button>
+                <button class="chip" data-fmt="916" aria-pressed="false">9:16</button>
+              </div>
+              <input class="field" id="thumbText" placeholder="Thumbnail text" maxlength="60">
+              <div class="chips" id="voiceMini"></div>
+              <button class="btn ai" id="btnPick"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>Claude picks</button>
+              <p class="why" id="why" hidden></p>
+              <button class="btn xl dark" id="btnPng"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>Save PNG</button>
+            </div>
+          </div>
+        </div>
+        <video id="vid" muted playsinline preload="auto"></video>
+      </section>
+
+      <!-- BIBLE -->
+      <section role="tabpanel" id="p-bible" hidden>
+        <div class="bgrid">
+          <div class="card"><span class="label">House rules</span><textarea class="field" id="bRules"></textarea></div>
+          <div class="card"><span class="label">Channels</span><textarea class="field" id="bChannels"></textarea></div>
+          <div class="card"><span class="label">Glossary · term = keep</span><textarea class="field" id="bGloss"></textarea></div>
+          <div class="card"><span class="label">Voices</span><div class="vt" id="bVoices"></div></div>
+        </div>
+        <div class="row"><span class="sp"></span><button class="btn" id="btnReset">Reset</button><button class="btn primary" id="btnSaveBible">Save</button></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="job" id="job" hidden><b id="jobLabel">Working</b><span class="track"><i id="jobBar"></i></span><button id="jobStop">Stop</button></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- Logos (from 5_ID/Logos PNT:OYE:OYAI and the OYAI site) ---------- */
+const LOGO_SVG = {"ponadto": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"280 160 1330 1140\"><path transform=\"translate(558,582)\" d=\"m0 0h67l13 19 26 36 12 17 13 18 12 17 13 18 12 17 13 18 24 34 2 3 1-197h66v310h-66l-36-51-13-18-13-19-13-18-14-20-48-68-3-4-1 198h-67z\" fill=\"currentColor\"/><path transform=\"translate(686,966)\" d=\"m0 0h12l23 2 22 5 19 7 17 9 16 12 10 9 9 9 10 13 8 13 8 16 6 18 4 21 1 9v33l-3 21-6 21-7 16-9 16-11 14-11 12-10 9-16 11-19 10-21 7-21 4-11 1h-25l-23-3-21-6-16-7-16-9-16-13-14-14-10-13-10-17-8-19-5-18-3-19-1-15v-12l2-23 5-22 6-16 8-16 8-12 9-11 17-17 16-12 18-10 15-6 18-5 13-2zm1 62-14 2-15 5-12 7-10 9-7 7-9 14-6 14-4 15-2 16v19l3 19 5 15 6 12 9 12 12 12 13 8 12 5 13 3h27l16-4 12-5 13-9 11-11 9-14 7-16 4-18 1-9v-22l-3-20-5-15-8-15-11-13-11-9-15-8-19-5-10-1z\" fill=\"#FCE26B\"/><path transform=\"translate(558,179)\" d=\"m0 0h118l18 3 17 6 13 8 13 11 10 13 7 15 4 15 1 6v26l-3 16-6 16-7 13-9 11-10 9-13 8-19 8-14 4-21 2h-33v120h-66zm70 55-5 1v79h34l11-4 6-4 6-5 7-11 3-10v-13l-3-10-6-9-7-6-8-4-16-4z\" fill=\"currentColor\"/><path transform=\"translate(1014,582)\" d=\"m0 0h52l6 13 20 50 12 29 88 216v2h-67l-4-8-17-42-20-49-22-54-21-52v-2h-2l-3 10-78 195-1 2h-67l3-9 43-108 43-107 34-85z\" fill=\"currentColor\"/><path transform=\"translate(300,970)\" d=\"m0 0h209v66h-71v244h-67v-244h-71z\" fill=\"currentColor\"/><path transform=\"translate(1350,581)\" d=\"m0 0h19l24 4 24 8 19 10 14 10 12 11 11 11 12 16 10 18 6 15 4 13 3 17 1 12v17l-2 20-4 19-5 15-10 21-12 17-11 12-11 11-15 11-14 8-16 7-16 5-16 3-8 1h-19v-70l22-2 16-4 15-6 12-8 10-9 8-10 7-14 4-13 2-15v-13l-2-14-5-15-7-12-9-10-9-8-13-8-19-7-16-3-16-2z\" fill=\"currentColor\"/><path transform=\"translate(920,334)\" d=\"m0 0h28l22 3 19 5 19 8 16 9 13 10 13 12 10 11 9 13 9 16 6 15 5 17 3 19v20h-70l-2-22-5-19-8-16-7-10-4-4v-2l-4-2-7-6-10-6-14-5-16-3h-21l-15 3-13 5-12 8-7 6-8 10-9 15-7 21-2 12-1 15h-70v-17l3-20 4-15 6-16 10-19 9-12 9-10 4-5 8-7 14-11 13-8 19-9 20-6z\" fill=\"#3A56A2\"/><path transform=\"translate(1235,582)\" d=\"m0 0h67v310h-67z\" fill=\"#46987E\"/><path transform=\"translate(300,706)\" d=\"m0 0h136v61h-136z\" fill=\"#6E7A9C\"/></svg>", "oye": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"50 430 1148 391\"><path fill=\"currentColor\" transform=\"translate(120,440)\" d=\"m0 0h223l11 3 15 8 6 4v2l4 2 6 6v2h2l8 12 5 11 3 12v247l-5 16-8 14-9 10-10 9-12 7-15 5-9 1h-207l-12-2-10-3-16-9-13-12-7-10-7-14-3-10-1-10v-232l2-12 4-13 8-14 7-8h2v-2l10-8 8-5 13-5zm7 55-8 6-4 6-1 5v227l3 8 8 7 6 2h200l6-2 6-4 5-8v-234l-5-8-8-5z\"/><path fill=\"currentColor\" transform=\"translate(469,440)\" d=\"m0 0h17l9 5v2l3 1 4 5 3 8 1 121 6 10 7 4 5 1h196l7-2 5-3 5-6 2-6 1-119 4-9 6-7 9-5h16l8 4 7 7 3 5 2 8v119l-4 18-4 10-7 11-10 11h-2v2l-15 10-12 5-9 2-81 1-1 136-4 9-7 8-8 4-11 1-7-1-8-5-7-8-3-7v-137l-83-1-16-5-11-6-10-8-8-8-7-10-5-10-3-9-2-9v-126l4-9 4-5h2v-2z\"/><path fill=\"currentColor\" transform=\"translate(865,756)\" d=\"m0 0h300l9 3 8 6 3 3 3 7v17l-4 8-7 7-7 3-6 1h-298l-8-2-6-3-7-7-3-7-1-11 2-8 3-6 8-7 6-3z\"/><path fill=\"currentColor\" transform=\"translate(861,598)\" d=\"m0 0h308l8 4 8 8 3 7v16l-4 8-5 5-5 4-5 2h-308l-8-4-5-4-5-8-2-9 1-10 4-8 7-7z\"/><path fill=\"currentColor\" transform=\"translate(861,440)\" d=\"m0 0h309l8 5 5 5 4 6 1 3v16l-4 8-7 7-10 4h-304l-10-4-8-8-3-7-1-10 2-9 6-9 7-5z\"/><path fill=\"currentColor\" transform=\"translate(229,587)\" d=\"m0 0 11 1 6 3 7 6 5 10 1 9v14l-1 17-4 8-7 7-9 4h-13l-7-3-5-3-6-8-3-8v-35l4-9 7-8 8-4z\"/></svg>"};
+const OYAI_MASK = "data:image/png;base64,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";
+
+/* ---------- Bible (from Creator) ---------- */
+const DEFAULT_BIBLE = {
+  voices: {
+    ponadto: { name:"Po-Nad-To", line:"We run creative workshops with young people, educators and communities.",
+      tone:"Joy, warmth, people. Community first and mission driven: creativity is the spark for social change. Workshops for youth, refugees and educators in 10+ countries. Photographs of people rather than objects." },
+    oye: { name:"OYE Prod", line:"We produce educational films for NGOs and institutions.",
+      tone:"Professional, cinematic. Story first, proud of the craft and the finished work. Production, direction, edit." },
+    oyai: { name:"OYAI", line:"We help beginners catch up with AI, safely.",
+      tone:"Tech, calm, confidence. Reassuring, practical, demystifying. For people who feel left behind by AI and want to catch up with confidence. Never an experiment or a lab." },
+    lude: { name:"Lude Réno", line:"Personal voice: philosophy, ethics, practice.",
+      tone:"First person, reflective, plain. Teaching since 2010. No organisation branding, no tag. The quiet is the signal." }
+  },
+  rules:
+`Never use em dashes. Use commas, colons or full stops.
+Ludizm is private. It never appears in posts, tags or public wording.
+KIUB, Brave Gens and ECA Festival are not public yet. Never mention them.
+One post, one voice. If a story fits two ventures, it is two posts.
+The statement: eight words or fewer, one idea, three lines maximum, no venture name inside it (the tag already says it).
+Footer line: place, date or programme, short.
+YouTube thumbnail text: four words maximum.
+Carousels: one idea per slide, one ask at the end, only one.
+Warm, human, specific. Lead with a hook.`,
+  channels:
+`LinkedIn: separate page per venture plus the personal profile. Professional, impact and partners, about 1300 characters.
+Facebook: warm and community driven, the full story.
+Instagram: separate accounts per venture. Punchy caption built around the visual, then 5 to 10 hashtags.
+X: under 280 characters, one strong line plus the link.
+YouTube: one channel, one playlist per venture. Start with TITLE: then DESCRIPTION: with the full backstory.
+TikTok: Po-Nad-To only. Unbranded in feel, one hooky line for a 20 to 45 second vertical clip, a few hashtags. Content that looks produced dies there.`,
+  glossary:
+`Po-Nad-To = keep
+OYE Prod = keep
+OYAI = keep
+Kreatywne Warsztaty Filmowe = keep
+Lude Réno = keep`
+};
+const VOICE_COLOR = {
+  ponadto:{ mark:"#FCE26B" },
+  oye:{ mark:"#e94560" },
+  oyai:{ mark:"#E9C9A4" },
+  lude:{ mark:"#ffffff" }
+};
+/* UI logo: inherits the token colour of its container */
+function logoHTML(id){
+  if (id === "ponadto") return `<span class="logo l-pnt">${LOGO_SVG.ponadto}</span>`;
+  if (id === "oye") return `<span class="logo l-oye">${LOGO_SVG.oye}</span>`;
+  if (id === "oyai") return `<span class="logo l-oyai" style="-webkit-mask-image:url(${OYAI_MASK});mask-image:url(${OYAI_MASK})"></span>`;
+  return `<span class="logo l-lude">Lude Réno</span>`;
+}
+/* Canvas logo: always white, for use over video frames */
+const LOGO_IMG = {};
+function loadImg(src){ return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+async function logoImage(id){
+  if (id in LOGO_IMG) return LOGO_IMG[id];
+  let img = null;
+  if (LOGO_SVG[id]) img = await loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(LOGO_SVG[id].replace(/currentColor/g, "#ffffff").replace("<svg ", id === "oye" ? '<svg width="1148" height="391" ' : '<svg width="1330" height="1140" ')));
+  else if (id === "oyai") img = await loadImg(OYAI_MASK);
+  return LOGO_IMG[id] = img;
+}
+const PLATFORMS = [
+  { id:"linkedin", name:"LinkedIn", max:3000 },
+  { id:"instagram", name:"Instagram", max:2200 },
+  { id:"facebook", name:"Facebook", max:63000 },
+  { id:"youtube", name:"YouTube", max:5000 },
+  { id:"x", name:"X", max:280 },
+  { id:"tiktok", name:"TikTok", max:2200 }
+];
+const LANGS = { en:"English", fr:"French", pl:"Polish", es:"Spanish", de:"German", uk:"Ukrainian", pt:"Portuguese", it:"Italian", ka:"Georgian", ht:"Haitian Creole" };
+
+let BIBLE = JSON.parse(JSON.stringify(DEFAULT_BIBLE));
+try { const raw = localStorage.getItem("cs-bible"); if (raw) BIBLE = Object.assign(BIBLE, JSON.parse(raw)); } catch {}
+
+/* ---------- State ---------- */
+const EXAMPLE = [
+  [0.0, 3.2, "bonjour a tous et bienvenue dans cet atelier de cinema"],
+  [3.4, 6.8, "aujourdhui on va apprendre a raconter une histoire avec une seule camera"],
+  [7.0, 10.1, "VOUS N'AVEZ PAS BESOIN D'ÊTRE UN PROFESSIONNEL"],
+  [10.3, 13.9, "ce qui compte c'est le regard que vous portez sur les gens"],
+  [14.2, 17.0, "on commence par un exercice simple, filmer ses mains"],
+  [17.2, 20.6, "les mains racontent beaucoup plus qu'on ne le pense"],
+  [21.0, 24.4, "ensuite chaque groupe choisira un lieu dans le village"],
+  [24.6, 28.2, "et on se retrouve a midi pour regarder les premieres images"]
+];
+const S = {
+  tab:"words", cues:[], tr:{}, view:"orig", example:false, name:"", srcLang:"auto", srcDetected:"", job:"", pending:null, mode:"full",
+  langs:["en"], voice:"ponadto", plats:["linkedin","instagram","youtube"], posts:null, postLang:"same",
+  video:null, frames:[], pick:0, fmt:"169", thumbText:"", why:""
+};
+function loadExample(){
+  S.cues = EXAMPLE.map(([s,e,t]) => ({s,e,t})); S.tr = {}; S.view = "orig"; S.example = true; S.name = "atelier-example.srt"; S.srcLang = "auto"; S.srcDetected = "";
+}
+try {
+  const raw = localStorage.getItem("cs-state");
+  if (raw){ Object.assign(S, JSON.parse(raw), { tab:"words", video:null, frames:[], pick:0 }); delete S.lastLink; }
+} catch {}
+if (!S.cues.length) loadExample();
+
+let saveT;
+function save(){
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    try {
+      const { cues, tr, view, example, name, srcLang, srcDetected, job, pending, mode, langs, voice, plats, posts, postLang, fmt, thumbText } = S;
+      localStorage.setItem("cs-state", JSON.stringify({ cues, tr, view, example, name, srcLang, srcDetected, job, pending, mode, langs, voice, plats, posts, postLang, fmt, thumbText }));
+    } catch {}
+  }, 400);
+}
+
+/* ---------- Claude ---------- */
+let sample = null, downloads = null;
+function setClaude(state){
+  const p = $("claudePill");
+  p.className = "pill " + (state === true ? "on" : state === false ? "off" : "");
+  p.lastElementChild.textContent = state === false ? "Claude off" : "Claude";
+  p.title = state === false ? "Open this page on claude.ai to use Claude" : "";
+}
+(async () => {
+  if (!window.claude || !window.claude.use) { setClaude(false); return; }
+  const [s, d] = await Promise.all([
+    window.claude.use("sample").catch(() => null),
+    window.claude.use("downloads").catch(() => null)
+  ]);
+  sample = s; downloads = d; setClaude(!!s);
+})();
+function needClaude(){
+  if (sample) return true;
+  toast("Claude is not available here. Open Creator Studio on claude.ai.");
+  return false;
+}
+function errCopy(e){
+  return ({
+    not_granted:"Claude access was declined for this page.",
+    sampling_disabled:"Claude is not available for this account.",
+    rate_limited:"Too many requests. Wait a minute, then try again.",
+    session_expired:"Sign in to Claude again, then retry.",
+    refused:"Claude declined this text.",
+    invalid_json:"The answer came back malformed. Try again.",
+    prompt_too_large:"Too much text at once. Shorten the story or transcript.",
+    images_unavailable:"This view cannot send images to Claude."
+  })[e && e.code] || "Claude did not answer. Try again.";
+}
+
+/* ---------- Job + toast ---------- */
+let job = null;
+function startJob(label){
+  const ctl = new AbortController(); job = ctl;
+  $("job").hidden = false; $("jobLabel").textContent = label; $("jobBar").style.width = "4%";
+  document.body.classList.add("busy");
+  return ctl;
+}
+function setProg(p, label){ $("jobBar").style.width = Math.max(4, Math.round(p * 100)) + "%"; if (label) $("jobLabel").textContent = label; }
+function endJob(){ job = null; $("job").hidden = true; document.body.classList.remove("busy"); }
+$("jobStop").onclick = () => job && job.abort();
+let toastT;
+function toast(msg){ const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+
+/* ---------- Time + SRT ---------- */
+const pad = (n, w=2) => String(n).padStart(w, "0");
+function fmtTC(t, sep=","){ t = Math.max(0, t); const ms = Math.round(t * 1000); const h = Math.floor(ms/3600000), m = Math.floor(ms/60000)%60, s = Math.floor(ms/1000)%60; return `${pad(h)}:${pad(m)}:${pad(s)}${sep}${pad(ms%1000,3)}`; }
+function shortTC(t){ t = Math.max(0, Math.floor(t)); const h = Math.floor(t/3600), m = Math.floor(t/60)%60, s = t%60; return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`; }
+function parseTS(x){ const p = x.trim().replace(",", ".").split(":").map(Number); return p.length === 3 ? p[0]*3600 + p[1]*60 + p[2] : p[0]*60 + p[1]; }
+function parseSubs(txt){
+  const blocks = txt.replace(/\r/g, "").replace(/^﻿/, "").split(/\n\s*\n/);
+  const out = [];
+  for (const b of blocks){
+    const lines = b.split("\n"); const k = lines.findIndex(l => l.includes("-->"));
+    if (k < 0) continue;
+    const [a, z] = lines[k].split("-->");
+    const t = lines.slice(k + 1).join(" ").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    const s = parseTS(a), e = parseTS(z.trim().split(/\s+/)[0]);
+    if (t && isFinite(s) && isFinite(e)) out.push({ s, e, t });
+  }
+  return out;
+}
+function wrap2(t, max=42){
+  if (t.length <= max) return t;
+  const mid = t.length / 2; let best = -1;
+  for (let i = 0; i < t.length; i++) if (t[i] === " " && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))) best = i;
+  return best < 0 ? t : t.slice(0, best) + "\n" + t.slice(best + 1);
+}
+const toSRT = texts => S.cues.map((c, i) => `${i+1}\n${fmtTC(c.s)} --> ${fmtTC(c.e)}\n${wrap2(texts[i] || "")}\n`).join("\n");
+function scriptToCues(text, total){
+  const flat = text.replace(/\s+/g, " ").trim(); if (!flat) return [];
+  const sentences = flat.match(/[^.!?…]+[.!?…]*["»”)]*\s*/g) || [flat];
+  const parts = [];
+  for (let s of sentences){
+    s = s.trim(); if (!s) continue;
+    if (s.length <= 84){ parts.push(s); continue; }
+    let cur = "";
+    for (const w of s.split(" ")){
+      if ((cur + " " + w).trim().length > 84){ parts.push(cur.trim()); cur = w; } else cur += " " + w;
+    }
+    if (cur.trim()) parts.push(cur.trim());
+  }
+  const gap = 0.12, durs = parts.map(p => Math.max(1.2, p.length / 15));
+  const sum = durs.reduce((a, b) => a + b, 0) + gap * parts.length;
+  const k = total ? total / sum : 1;
+  let t = 0;
+  return parts.map((p, i) => { const s = t, e = t + durs[i] * k; t = e + gap * k; return { s, e, t:p }; });
+}
+
+/* ---------- Tabs ---------- */
+const TITLES = { words:"Link", subs:"Subtitles", frames:"Thumbnail", post:"Post", bible:"Bible" };
+function go(tab){
+  S.tab = tab;
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+  document.querySelectorAll('[role="tabpanel"]').forEach(p => p.hidden = p.id !== "p-" + tab);
+  $("h").textContent = TITLES[tab];
+  render();
+  document.querySelector("main").scrollTop = 0;
+  try { history.replaceState(null, "", "#" + tab); } catch {}
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => go(b.dataset.tab));
+
+function render(){
+  $("exPill").hidden = !(S.example && (S.tab === "words" || S.tab === "subs"));
+  $("t-words").classList.toggle("done", S.cues.length > 0 && !S.example);
+  $("t-subs").classList.toggle("done", Object.keys(S.tr).length > 0);
+  $("t-post").classList.toggle("done", !!S.posts);
+  $("t-frames").classList.toggle("done", S.frames.length > 0);
+  if (S.tab === "words") renderWords();
+  if (S.tab === "subs") renderSubs();
+  if (S.tab === "post") renderPost();
+  if (S.tab === "frames") renderFrames();
+  if (S.tab === "bible") renderBible();
+}
+
+/* ---------- Link pipeline: Mac helper (download, transcribe, frames), then Claude (clean, translate) ---------- */
+const HELPER = "host:creator-studio";
+let mcp = null;
+let helperSeen = false;  /* the app listed the helper's tools at least once in this view */
+/* The helper is only reachable from inside the Claude desktop app (an Electron window), never from a browser tab. */
+const IN_APP = /Electron/i.test(navigator.userAgent);
+const NO_HELPER_WHY = IN_APP
+  ? "The Claude app does not see the helper. Quit the app (Cmd+Q) and reopen it."
+  : "The Mac helper only works when Creator Studio is open inside the Claude desktop app. In a browser you can still drop .srt files.";
+const NO_HELPER_TILE = IN_APP ? "Restart the Claude app" : "Open in the Claude app";
+function setHelper(state, why){
+  const p = $("helperPill");
+  p.className = "pill " + (state === true ? "on" : state === false ? "off" : "");
+  p.lastElementChild.textContent = state === false ? "Mac helper off" : "Mac helper";
+  p.title = why || (state === false ? "Open Creator Studio in the Claude desktop app on your Mac" : "");
+}
+/* Listing never asks the viewer anything; it tells us if the app sees the helper right now. */
+async function helperListed(){
+  if (!mcp) return false;
+  try {
+    const r = await mcp.listTools(HELPER);
+    const srv = (r.servers || []).find(x => x.server === HELPER);
+    helperSeen = !!(srv && srv.tools && srv.tools.length);
+  } catch { helperSeen = false; }
+  return helperSeen;
+}
+(async () => {
+  if (!window.claude || !window.claude.use) { setHelper(false); return; }
+  mcp = await window.claude.use("mcp").catch(() => null);
+  if (!mcp){ setHelper(false); return; }
+  const ok = await helperListed();
+  setHelper(ok, ok ? "Ready" : NO_HELPER_WHY);
+  if (S.tab === "frames") renderFrames();
+})();
+const STEPS = [
+  { id:"dl", name:"Download", who:"Mac", icon:'<path d="M12 4v12M7 11l5 5 5-5M4 20h16"/>' },
+  { id:"tr", name:"Transcribe", who:"Mac", icon:'<path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/>' },
+  { id:"fr", name:"10 frames", who:"Mac", icon:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M16 5v14"/>' },
+  { id:"cl", name:"Clean", who:"Claude", icon:'<path d="M4 20l9-9M14 4l1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>' },
+  { id:"tl", name:"Translate", who:"Claude", icon:'<path d="M4 6h9M8 4v2M6 6c0 4 3 7 6 8M11 6c-1 4-4 7-7 8M13 20l4-9 4 9M14.5 17h5"/>' },
+  { id:"ok", name:"Ready", who:"You", icon:'<path d="M5 12l5 5 9-10"/>' }
+];
+const PIPE = { running:false, st:{} };
+function resetSteps(){ STEPS.forEach(x => PIPE.st[x.id] = { st:"", p:0, note:x.who }); }
+resetSteps();
+function setStep(id, st, p = 0, note){ PIPE.st[id] = { st, p, note: note ?? PIPE.st[id].note }; if (S.tab === "words") renderSteps(); }
+function renderSteps(){
+  $("steps").innerHTML = STEPS.map(x => {
+    const v = PIPE.st[x.id], w = v.st === "done" ? 100 : v.st === "active" ? Math.round(v.p * 100) : 0;
+    return `<li class="step ${v.st}"><span class="ic"><svg class="i" viewBox="0 0 24 24">${x.icon}</svg></span><b>${x.name}</b><span class="bar"><i style="width:${w}%"></i></span><small>${esc(v.note || "")}</small></li>`;
+  }).join("");
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const safeName = t => (String(t || "video").normalize("NFKD").replace(/[^\w\s.-]/g, "").trim().replace(/\s+/g, "-").slice(0, 60) || "video");
+async function callHelper(tool, input){
+  const r = await mcp.callTool(HELPER, tool, input, { cache:false });
+  let p = r.payload;
+  if (typeof p === "string"){ try { p = JSON.parse(p); } catch {} }
+  return p;
+}
+/* Reads (status, result, frame) may be retried when the app says the helper was briefly unavailable.
+   `start` and uploads are never retried automatically. */
+async function readHelper(tool, input, tries = 6){
+  for (let k = 1; ; k++){
+    try { return await callHelper(tool, input); }
+    catch (e){
+      if (!(e && e.retryable) || k >= tries) throw e;
+      await sleep((e.retryAfterMs || 2500) + Math.random() * 1000);
+    }
+  }
+}
+function helperErr(e){
+  if (!e) return "The Mac helper did not answer.";
+  if (e.code === "cancelled") return "Stopped";
+  if (e.code === "server_not_connected" || e.code === "not_granted" || e.code === "capability_disabled"){ setHelper(false); return "Open Creator Studio in the Claude desktop app on your Mac to use the helper."; }
+  if (e.code === "not_in_manifest") return "The Mac helper is not allowed for this page. Allow it in the page's permissions.";
+  if (e.code === "approval_required") return "The Mac helper needs your approval. Press Start again and allow it.";
+  if (e.code === "helper" || e.code === "tool_error") return e.message || "The Mac helper reported an error.";
+  if (e.code && e.message && !e.code.startsWith("invalid")) return errCopy(e);
+  return e.message || "Something stopped the run. Try again.";
+}
+/* short reason shown on the tile that stopped */
+function failNote(e){
+  const c = e && e.code;
+  if (c === "cancelled") return "Stopped";
+  if (c === "server_not_connected" || c === "not_granted" || c === "capability_disabled") return "Helper not reachable";
+  if (c === "server_unavailable") return "Lost contact, press Start to resume";
+  if (c === "not_in_manifest" || c === "approval_required") return "Needs your OK";
+  if (c === "helper" || c === "tool_error") return String((e && e.message) || "Helper error").slice(0, 40);
+  return "Stopped: " + (c || "error");
+}
+async function loadFrames(job, r, onProg){
+  if (!r.frames || !r.frames.length) return;  // audio files have no pictures
+  S.video = { url:null, name:r.title, dur:r.duration, w:r.width, h:r.height, helper:true };
+  S.frames = [];
+  for (const f of r.frames){
+    const fr = await readHelper("frame", { job, index:f.index, width:1600 }, 3);
+    const img = await loadImg("data:image/jpeg;base64," + fr.jpeg);
+    if (!img) continue;
+    const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").drawImage(img, 0, 0);
+    const s = document.createElement("canvas"); s.width = 480; s.height = Math.round(480 * img.height / img.width); s.getContext("2d").drawImage(img, 0, 0, s.width, s.height);
+    S.frames.push({ t:f.t, canvas:c, thumb:s.toDataURL("image/jpeg", 0.8), score:f.score });
+    onProg && onProg(S.frames.length / r.frames.length);
+  }
+  S.pick = S.frames.reduce((b, f, i) => f.score > S.frames[b].score ? i : b, 0);
+}
+async function runPipeline(source, prepare){
+  if (PIPE.running || job) return;
+  if (!mcp){ toast("Links and file paths need the Mac helper: open Creator Studio inside the Claude desktop app."); return; }
+  if (!(await helperListed())){
+    setHelper(false, NO_HELPER_WHY);
+    resetSteps(); setStep("dl", "fail", 0, NO_HELPER_TILE); renderSteps();
+    toast(IN_APP ? "The Claude app does not see the Mac helper. Quit it (Cmd+Q), reopen it, then press Start again."
+                 : "Links and file paths need the Mac helper: open Creator Studio inside the Claude desktop app (Artifacts in the sidebar), then press Start.");
+    return;
+  }
+  setHelper(true, "Ready");
+  PIPE.running = true; resetSteps(); renderSteps();
+  const ctl = startJob("Starting"), signal = ctl.signal;
+  let current = "dl";
+  const at = (id, p, note) => { current = id; setStep(id, "active", p, note); };
+  try {
+    at("dl", 0, "Starting");
+    let jobId;
+    if (!prepare && S.pending && S.pending.source === source){
+      jobId = S.pending.job;  /* interrupted earlier: follow the job already running on the Mac */
+    } else {
+      if (prepare) source = await prepare(signal, at);
+      const started = await callHelper("start", { source, language: S.srcLang && S.srcLang !== "auto" ? S.srcLang : "" });
+      jobId = started.job;
+      if (started.reused) at("dl", 1, "Already on this Mac");
+      S.pending = { job: jobId, source };
+    }
+    S.job = jobId; save();
+    let st, lastPiece = 0;
+    for (;;){
+      if (signal.aborted) throw { code:"cancelled" };
+      await sleep(2500);
+      st = await readHelper("status", { job: jobId });
+      const p = st.progress || 0;
+      if (/Download|Start/.test(st.stage)) at("dl", Math.min(1, p / 0.2), st.title || "Downloading");
+      else if (/audio|Transcrib/.test(st.stage)){
+        setStep("dl", "done", 1, st.title || "Done");
+        if (st.pieces) at("tr", (st.piece || 0) / st.pieces, `${st.piece || 0} / ${st.pieces} pieces · ${(st.lines || 0).toLocaleString()} lines`);
+        else at("tr", Math.max(0, (p - 0.22) / 0.6), st.duration ? `${shortTC(st.duration)} of audio` : "Listening");
+        /* a new piece is done: show the transcript so far in Subtitles */
+        if (st.piece && st.piece !== lastPiece){
+          lastPiece = st.piece;
+          try {
+            const part = await readHelper("partial", { job: jobId }, 1);
+            if (Array.isArray(part.cues) && part.cues.length){
+              S.cues = part.cues.map(c => ({ s:c.s, e:c.e, t:c.t })); S.tr = {}; S.view = "orig"; S.example = false;
+              S.name = safeName(st.title) + ".srt"; S.posts = null;
+              if (S.tab === "subs") renderSubs(); else if (S.tab === "words") renderWords();
+            }
+          } catch {}
+        }
+      }
+      else if (/frame/i.test(st.stage)){ setStep("dl", "done"); setStep("tr", "done", 1, "Done"); at("fr", Math.max(0, (p - 0.82) / 0.18), "Choosing"); }
+      setProg(p * 0.55, st.stage);
+      if (st.done) break;
+    }
+    if (st.error) throw { code:"helper", message: st.error };
+    const r = await readHelper("result", { job: jobId });
+    S.cues = (r.cues || []).map(c => ({ s:c.s, e:c.e, t:c.t }));
+    S.tr = {}; S.view = "orig"; S.example = false; S.posts = null;
+    S.name = safeName(r.title) + ".srt"; S.srcDetected = r.language || "";
+    setStep("dl", "done"); setStep("tr", "done", 1, `${S.cues.length} lines · ${(r.language || "?").toUpperCase()}`);
+    at("fr", 0.5, "Loading");
+    await loadFrames(jobId, r, p => setStep("fr", "active", p, "Loading"));
+    setStep("fr", "done", 1, r.frames && r.frames.length ? `${S.frames.length} kept` : "Audio only"); save();
+    if (!S.cues.length) throw { code:"helper", message:"No speech was found in this video." };
+    if (S.mode === "raw"){ setStep("cl", "done", 1, "Skipped"); setStep("tl", "done", 1, "Skipped"); }
+    else if (sample){
+      at("cl", 0, "Proofreading");
+      const dropped = await cleanAll(signal, (p, l) => { setStep("cl", "active", p, l); setProg(0.55 + p * 0.2, "Cleaning"); });
+      setStep("cl", "done", 1, dropped ? `${dropped} filler line${dropped > 1 ? "s" : ""} out` : "Done"); save();
+      const targets = S.langs.filter(l => l !== S.srcDetected);
+      if (targets.length){
+        at("tl", 0, targets.map(x => x.toUpperCase()).join(" "));
+        const out = await translateAll(signal, (p, l) => { setStep("tl", "active", p, l); setProg(0.75 + p * 0.25, "Translating"); });
+        setStep("tl", "done", 1, out.gaps ? `${out.gaps} lines to check` : out.targets.map(x => x.toUpperCase()).join(" "));
+      } else setStep("tl", "done", 1, "Nothing to translate");
+    } else { setStep("cl", "fail", 0, "Claude off"); setStep("tl", "fail", 0, "Claude off"); }
+    S.pending = null;
+    setStep("ok", "done", 1, S.mode === "raw" ? "Transcript ready" : "Check subtitles");
+    toast(S.mode === "raw" ? "Transcript ready. Export it as .txt in Subtitles." : "Ready. Check the subtitles.");
+    setTimeout(() => { if (S.tab === "words") go("subs"); }, 900);
+  } catch (e){
+    if (e && (e.code === "helper" || e.code === "tool_error")) S.pending = null;  /* a failed job is not resumed */
+    setStep(current, "fail", 0, failNote(e));
+    toast(helperErr(e));
+  } finally { PIPE.running = false; endJob(); save(); render(); }
+}
+/* Audio dropped in the page: sent to the Mac helper in chunks, then the same pipeline */
+const blobToB64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+function runAudio(file){
+  if (!mcp){ toast("Audio files need the Mac helper: open Creator Studio inside the Claude desktop app."); return; }
+  if (PIPE.running || job) return;
+  go("words");
+  runPipeline(null, async (signal, at) => {
+    at("dl", 0, "Uploading");
+    const { upload } = await callHelper("upload_begin", { name:file.name });
+    const lt = await mcp.listTools().catch(() => null);
+    let viaFile = !!(lt && lt.fileArgs);
+    const ext = (file.name.match(/\.[^.]+$/) || [".mp3"])[0].toLowerCase();
+    for (let i = 0; i < file.size; ){
+      if (signal.aborted) throw { code:"cancelled" };
+      const size = viaFile ? 15 * 1048576 : 700 * 1024, part = file.slice(i, i + size);
+      try {
+        const data = viaFile ? { $file:{ data:part, name:"part" + ext, type:file.type || (ext === ".wav" ? "audio/wav" : "audio/mpeg") } } : await blobToB64(part);
+        await callHelper("upload_chunk", { upload, data });
+      } catch (e){
+        /* the file route refused the call before it reached the helper: resend this chunk as text */
+        if (viaFile && e && (e.code === "bad_request" || e.code === "capability_disabled")){ viaFile = false; continue; }
+        throw e;
+      }
+      i += size;
+      const p = Math.min(1, i / file.size);
+      at("dl", p, `Uploading ${Math.round(p * 100)}%`); setProg(p * 0.1, "Uploading");
+    }
+    return "upload:" + upload;
+  });
+}
+$("linkForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("linkIn").value.trim();
+  if (!v){ toast("Paste a video link first."); $("linkIn").focus(); return; }
+  runPipeline(v);
+});
+/* the field always starts empty; × clears it */
+function syncClear(){ $("linkClear").hidden = !$("linkIn").value; }
+$("linkIn").addEventListener("input", syncClear);
+$("linkClear").onclick = () => { $("linkIn").value = ""; syncClear(); $("linkIn").focus(); };
+$("linkIn").value = ""; syncClear();
+
+/* ---------- Words ---------- */
+function renderMode(){
+  $("modeChips").querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === S.mode));
+  $("langLabel").hidden = S.mode === "raw"; $("langChips2").hidden = S.mode === "raw";
+}
+$("modeChips").addEventListener("click", e => { const b = e.target.closest("[data-mode]"); if (b){ S.mode = b.dataset.mode; save(); renderMode(); } });
+function renderWords(){
+  renderSteps(); renderLangChips(); renderMode();
+  const dur = S.cues.length ? S.cues[S.cues.length - 1].e : 0;
+  const words = S.cues.reduce((n, c) => n + c.t.split(/\s+/).filter(Boolean).length, 0);
+  $("wordsStat").innerHTML = S.cues.length ? `
+    <div><b>${S.cues.length}</b><span>lines</span></div>
+    <div><b>${shortTC(dur)}</b><span>length</span></div>
+    <div><b>${words.toLocaleString()}</b><span>words</span></div>
+    <div style="flex:1;min-width:0"><b style="font-size:16px;font-family:var(--body);overflow-wrap:anywhere">${esc(S.name)}</b><span>${S.video ? "video ready for Frames" : "file"}</span></div>
+    <button class="btn primary" data-go="subs">Open subtitles</button>` :
+    `<div><b>0</b><span>lines</span></div><span class="sp"></span>`;
+}
+$("wordsStat").addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+$("btnScript").onclick = () => { $("scriptBox").hidden = !$("scriptBox").hidden; if (!$("scriptBox").hidden) $("scriptIn").focus(); };
+$("btnExample").onclick = () => { loadExample(); save(); render(); toast("Example loaded"); };
+/* New job: clear this video's work, keep the Bible, languages, voice and platforms.
+   First tap arms the button, second tap within 4 s resets (the viewer has no confirm dialogs). */
+let newArmed = null;
+function resetJob(){
+  if (PIPE.running || job){ toast("Stop the running job first."); return; }
+  if (S.video && S.video.url) URL.revokeObjectURL(S.video.url);
+  Object.assign(S, { cues:[], tr:{}, view:"orig", example:false, name:"", srcLang:"auto", srcDetected:"",
+    job:"", pending:null, posts:null, video:null, frames:[], pick:0, thumbText:"", why:"" });
+  const v = $("vid"); try { v.removeAttribute("src"); v.load(); } catch {}
+  ["linkIn", "scriptIn", "story", "link", "thumbText"].forEach(id => { const el = $(id); if (el) el.value = ""; });
+  $("scriptBox").hidden = true; resetSteps(); syncClear(); save(); go("words");
+  $("linkIn").focus(); toast("Ready for a new video");
+}
+$("btnNew").onclick = () => {
+  const b = $("btnNew");
+  if (newArmed){ clearTimeout(newArmed); newArmed = null; b.classList.remove("armed"); b.lastElementChild.textContent = "New job"; resetJob(); return; }
+  b.classList.add("armed"); b.lastElementChild.textContent = "Tap again to clear";
+  newArmed = setTimeout(() => { newArmed = null; b.classList.remove("armed"); b.lastElementChild.textContent = "New job"; }, 4000);
+};
+$("btnMake").onclick = () => {
+  const cues = scriptToCues($("scriptIn").value, S.video && S.video.dur);
+  if (!cues.length){ toast("Paste some text first."); return; }
+  S.cues = cues; S.tr = {}; S.view = "orig"; S.example = false; S.name = "script.srt"; S.srcLang = "auto"; S.srcDetected = "";
+  $("scriptBox").hidden = true; save(); render();
+  toast(S.video && S.video.dur ? "Timed to the video length" : "Timed at reading speed");
+};
+$("fileIn").onchange = e => { const f = e.target.files[0]; if (f) handleFile(f); e.target.value = ""; };
+$("vidIn").onchange = e => { const f = e.target.files[0]; if (f) handleFile(f); e.target.value = ""; };
+
+async function handleFile(f){
+  const ext = (f.name.split(".").pop() || "").toLowerCase();
+  if (ext === "srt" || ext === "vtt"){
+    const cues = parseSubs(await f.text());
+    if (!cues.length){ toast("No subtitle lines found in this file."); return; }
+    S.cues = cues; S.tr = {}; S.view = "orig"; S.example = false; S.name = f.name; S.posts = null; S.srcLang = "auto"; S.srcDetected = "";
+    save(); go("subs"); toast(`${cues.length} lines loaded`);
+  } else if (ext === "txt"){
+    $("scriptIn").value = await f.text(); $("scriptBox").hidden = false; go("words");
+  } else if (f.type.startsWith("video/") || ["mp4","mov","webm","m4v","mkv"].includes(ext)){
+    setVideo(f);
+    toast(S.tab === "frames" ? "Video loaded" : "Video ready in Thumbnail. For subtitles, paste its link above.");
+    render();
+  } else if (f.type.startsWith("audio/") || ["mp3","m4a","wav","aac","ogg","flac"].includes(ext)){
+    runAudio(f);
+  } else toast("Use .mp3, .wav, .srt, .vtt, .txt or a video file.");
+}
+window.addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("drag"); });
+window.addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("drag"); });
+window.addEventListener("drop", e => { e.preventDefault(); document.body.classList.remove("drag"); const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
+
+/* ---------- Subtitles ---------- */
+function renderLangChips(){
+  const html = Object.entries(LANGS).map(([k, n]) =>
+    `<button class="chip" type="button" data-lang="${k}" title="${n}" aria-pressed="${S.langs.includes(k)}">${k.toUpperCase()}</button>`).join("");
+  $("langChips").innerHTML = html; $("langChips2").innerHTML = html;
+}
+["langChips", "langChips2"].forEach(id => $(id).addEventListener("click", e => {
+  const b = e.target.closest("[data-lang]"); if (!b) return;
+  const k = b.dataset.lang; S.langs = S.langs.includes(k) ? S.langs.filter(x => x !== k) : [...S.langs, k];
+  save(); renderLangChips();
+}));
+/* spoken language: chosen, or detected once by Claude, else guessed from accents */
+function guessLang(){
+  const t = S.cues.slice(0, 60).map(c => c.t).join(" ").toLowerCase();
+  if (/[ąćęłńśźż]/.test(t)) return "pl";
+  if (/[ґєії]/.test(t)) return "uk";
+  if (/[ა-ჰ]/.test(t)) return "ka";
+  if (/[àâçèéêëîïôûùœ]|\b(le|la|les|une|est|dans|pour|avec)\b/.test(t)) return "fr";
+  if (/[ñ¿¡]|\b(el|los|las|una|para|con)\b/.test(t)) return "es";
+  if (/[äöüß]|\b(und|der|die|das|ist|nicht)\b/.test(t)) return "de";
+  if (/\b(the|and|is|you|with|this)\b/.test(t)) return "en";
+  return "";
+}
+const srcNow = () => (S.srcLang && S.srcLang !== "auto") ? S.srcLang : (S.srcDetected || guessLang());
+async function srcCode(){
+  if (S.srcLang && S.srcLang !== "auto") return S.srcLang;
+  if (S.srcDetected) return S.srcDetected;
+  let code = "";
+  if (sample && S.cues.length){
+    try {
+      const r = await sample.json(`Which language is this text? Reply with only JSON {"code":"two-letter ISO 639-1 code"}.\n\n${S.cues.slice(0, 40).map(c => c.t).join(" ").slice(0, 3000)}`, { modelTier:"quick" });
+      if (r && /^[a-z]{2}$/.test(r.code)) code = r.code;
+    } catch {}
+  }
+  S.srcDetected = code || guessLang(); save();
+  return S.srcDetected;
+}
+function renderSrcLang(){
+  const sel = $("srcLang"), det = S.srcDetected ? ` · ${S.srcDetected.toUpperCase()}` : "";
+  sel.innerHTML = `<option value="auto">Auto${det}</option>` + Object.entries(LANGS).map(([k, n]) => `<option value="${k}">${k.toUpperCase()} · ${n}</option>`).join("");
+  sel.value = S.srcLang || "auto";
+}
+$("srcLang").onchange = e => { S.srcLang = e.target.value; save(); renderSubs(); };
+function renderSubs(){
+  renderLangChips(); renderSrcLang();
+  const views = ["orig", ...Object.keys(S.tr)];
+  if (!views.includes(S.view)) S.view = "orig";
+  $("viewChips").innerHTML = views.length > 1 ? views.map(v =>
+    `<button class="chip" data-view="${v}" aria-pressed="${S.view === v}">${v === "orig" ? "Original" + (srcNow() ? " · " + srcNow().toUpperCase() : "") : LANGS[v]}</button>`).join("") : "";
+  if (!S.cues.length){
+    $("cues").innerHTML = `<div class="cue" style="grid-template-columns:1fr"><span class="src">No subtitles yet. Add a file in Words.</span></div>`;
+    return;
+  }
+  const two = S.view !== "orig", tr = two ? S.tr[S.view] : null;
+  $("cues").innerHTML = S.cues.map((c, i) => {
+    const t = two ? (tr[i] || "") : c.t;
+    const cps = t.length / Math.max(0.5, c.e - c.s);
+    return `<div class="cue${two ? " two" : ""}">
+      <span class="tc">${fmtTC(c.s, ".").slice(0, 11)}</span>
+      ${two ? `<span class="src">${esc(c.t)}</span>` : ""}
+      <span class="txt${two && !t ? " empty-tr" : ""}" contenteditable="plaintext-only" spellcheck="true" data-i="${i}">${esc(t)}</span>
+      <span class="cps${cps > 17 ? " hot" : ""}" title="Characters per second. Above 17 is hard to read.">${cps.toFixed(0)}</span>
+    </div>`;
+  }).join("");
+}
+$("viewChips").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b){ S.view = b.dataset.view; save(); renderSubs(); } });
+$("cues").addEventListener("input", e => {
+  const el = e.target.closest("[data-i]"); if (!el) return;
+  const i = +el.dataset.i, t = el.textContent.replace(/\s+/g, " ").trim();
+  if (S.view === "orig") S.cues[i].t = t; else S.tr[S.view][i] = t;
+  S.example = false; save();
+});
+
+const glossary = () => BIBLE.glossary.trim() || "(none)";
+async function chunked(label, total, fn){
+  const ctl = startJob(label);
+  try { await fn(ctl.signal); return true; }
+  catch (e){ if (e && e.code !== "cancelled") toast(errCopy(e)); else if (e && e.code === "cancelled") toast("Stopped"); return false; }
+  finally { endJob(); save(); render(); }
+}
+/* Clean: spelling, grammar, syntax, punctuation, without changing meaning or timing */
+async function cleanAll(signal, onProg){
+  const N = S.cues.length, B = 80;
+  for (let i = 0; i < N; i += B){
+    const part = S.cues.slice(i, i + B).map(c => c.t);
+    const before = S.cues.slice(Math.max(0, i - 3), i).map(c => c.t);
+    const prompt = `You proofread subtitle lines from a speech transcript. In each line's own language:
+1. Remove filler words and verbal tics: euh, hum, bah, ben, hein, genre, voilà (as a tic), tu vois, du coup (as a tic); um, uh, er, like, you know, I mean, sort of, basically; yyy, eee, no, wiesz, jakby, w sumie; and their equivalents in any other language.
+2. Remove stutters, repeated words and false starts (keep the finished sentence, drop the abandoned one).
+3. Fix spelling, accents, capitalisation, punctuation, grammar and syntax, and fix words the speech recogniser clearly misheard when the context makes the right word obvious.
+Keep the speaker's meaning, voice and register. Never translate, summarise, reorder or add ideas. A line may become shorter, never longer. If a line is only filler, return an empty string for it. Never use em dashes. Write glossary terms exactly as listed.
+GLOSSARY:
+${glossary()}
+${before.length ? `\nPREVIOUS LINES (context only, do not return):\n${JSON.stringify(before)}\n` : ""}
+Reply with only a JSON array of exactly ${part.length} strings, same order as the input.
+
+LINES:
+${JSON.stringify(part)}`;
+    const arr = await sample.json(prompt, { signal });
+    if (Array.isArray(arr) && arr.length === part.length)
+      arr.forEach((t, k) => { if (typeof t === "string") S.cues[i + k].t = t.trim(); });  /* "" marks a filler-only line */
+    onProg(Math.min(1, (i + B) / N), `${Math.min(N, i + B)} / ${N}`);
+    if (S.tab === "subs" && S.view === "orig") renderSubs();
+  }
+  /* drop lines that were only filler, keeping translations aligned */
+  const keep = S.cues.map(c => c.t.length > 0);
+  const dropped = keep.filter(k => !k).length;
+  if (dropped){
+    S.cues = S.cues.filter((_, k) => keep[k]);
+    for (const l of Object.keys(S.tr)) S.tr[l] = S.tr[l].filter((_, k) => keep[k]);
+  }
+  S.example = false;
+  return dropped;
+}
+/* Translate into every chosen language except the spoken one; returns lines left empty */
+async function translateAll(signal, onProg){
+  const src = await srcCode();
+  const targets = S.langs.filter(l => l !== src);
+  const N = S.cues.length, B = 60, steps = Math.max(1, targets.length * Math.ceil(N / B));
+  let step = 0, gaps = 0;
+  for (const lang of targets){
+    S.tr[lang] = new Array(N).fill("");
+    for (let i = 0; i < N; i += B){
+      const part = S.cues.slice(i, i + B).map(c => c.t);
+      const before = S.cues.slice(Math.max(0, i - 3), i).map(c => c.t);
+      const prompt = `Translate these video subtitle lines${src && LANGS[src] ? ` from ${LANGS[src]}` : ""} into ${LANGS[lang]}. Natural spoken style, each line about as short as its source so it reads in time. Keep one output line per input line, same order, never merge or split. Never use em dashes. Glossary terms marked "keep" stay untranslated.
+GLOSSARY:
+${glossary()}
+${before.length ? `\nPREVIOUS LINES (context only, do not translate):\n${JSON.stringify(before)}\n` : ""}
+Reply with only a JSON array of exactly ${part.length} strings.
+
+LINES:
+${JSON.stringify(part)}`;
+      const arr = await sample.json(prompt, { signal });
+      if (Array.isArray(arr)) part.forEach((_, k) => { const t = arr[k]; if (typeof t === "string" && t.trim()) S.tr[lang][i + k] = t.trim(); else gaps++; });
+      else gaps += part.length;
+      step++; onProg(step / steps, `${lang.toUpperCase()} ${Math.min(N, i + B)} / ${N}`);
+      if (S.tab === "subs") renderSubs();
+    }
+  }
+  return { gaps, targets };
+}
+$("btnClean").onclick = async () => {
+  if (!needClaude() || !S.cues.length) return;
+  let dropped = 0;
+  const ok = await chunked("Cleaning", 0, async signal => { dropped = await cleanAll(signal, (p, l) => setProg(p, "Cleaning " + l)); });
+  if (ok) toast(dropped ? `Cleaned. ${dropped} filler-only line${dropped > 1 ? "s" : ""} removed.` : "Cleaned");
+};
+$("btnTranslate").onclick = async () => {
+  if (!needClaude() || !S.cues.length) return;
+  if (!S.langs.length){ toast("Pick at least one language."); return; }
+  let out = null;
+  const ok = await chunked("Translating", 0, async signal => { out = await translateAll(signal, (p, l) => setProg(p, l)); });
+  if (!ok) return;
+  if (!out.targets.length) toast("The video is already in that language.");
+  else { S.view = out.targets[out.targets.length - 1]; renderSubs(); toast(out.gaps ? `Done. ${out.gaps} lines need a manual check.` : "Translated"); }
+};
+/* plain text: lines joined into paragraphs, a new one after a pause or when the paragraph gets long */
+function toTXT(texts){
+  const paras = []; let cur = "";
+  S.cues.forEach((c, i) => {
+    const t = (texts[i] || "").trim(); if (!t) return;
+    const prev = i ? S.cues[i - 1] : null;
+    if (cur && ((prev && c.s - prev.e > 1.5) || cur.length > 700)){ paras.push(cur); cur = ""; }
+    cur = cur ? cur + " " + t : t;
+  });
+  if (cur) paras.push(cur);
+  return paras.join("\n\n") + "\n";
+}
+$("btnTxt").onclick = async () => {
+  if (!S.cues.length) return;
+  const base = (S.name || "transcript").replace(/\.[^.]+$/, "") || "transcript";
+  const lang = S.view === "orig" ? (srcNow() || "") : S.view;
+  const text = toTXT(currentTexts()), name = `${base}${lang ? "." + lang : ""}.txt`;
+  if (!downloads){
+    try { await navigator.clipboard.writeText(text); toast("Saving files works on claude.ai. Text copied instead."); }
+    catch { toast("Saving files works on claude.ai. Use copy instead."); }
+    return;
+  }
+  try { await downloads.save({ filename:name, data:text }); toast("Saved " + name); }
+  catch (e){ if (e && e.code !== "declined") toast("Could not save the file."); }
+};
+function currentTexts(){ return S.view === "orig" ? S.cues.map(c => c.t) : S.tr[S.view].map((t, i) => t || S.cues[i].t); }
+$("btnCopy").onclick = async () => {
+  if (!S.cues.length) return;
+  try { await navigator.clipboard.writeText(toSRT(currentTexts())); toast("SRT copied"); }
+  catch { toast("Copy is blocked here. Use Export."); }
+};
+$("btnExport").onclick = async () => {
+  if (!S.cues.length) return;
+  if (!downloads){ toast("Saving files works on claude.ai. Use copy instead."); return; }
+  const base = (S.name || "subtitles").replace(/\.[^.]+$/, "") || "subtitles";
+  const src = await srcCode();
+  const files = [[`${base}${src ? "." + src : ""}.srt`, toSRT(S.cues.map(c => c.t))]];
+  for (const l of Object.keys(S.tr)) files.push([`${base}.${l}.srt`, toSRT(S.tr[l].map((t, i) => t || S.cues[i].t))]);
+  try {
+    if (typeof JSZip === "undefined") throw { code:"nozip" };
+    const zip = new JSZip(); files.forEach(([n, c]) => zip.file(n, c));
+    const blob = await zip.generateAsync({ type:"blob" });
+    await downloads.save({ filename:`${base}-srt.zip`, data:blob });
+    toast(`Saved ${files.length} .srt file${files.length > 1 ? "s" : ""}`);
+  } catch (e){
+    if (e && e.code === "declined") return;
+    toast(e && e.code === "nozip" ? "The zip tool did not load. Use copy instead." : "Could not save the file.");
+  }
+};
+
+/* ---------- Post ---------- */
+function voiceBtns(attr = "data-voice"){
+  return Object.entries(BIBLE.voices).map(([id, v]) =>
+    `<button class="voice v-${id}" ${attr}="${id}" aria-pressed="${S.voice === id}" aria-label="${esc(v.name)}" title="${esc(v.name)}">${logoHTML(id)}</button>`).join("");
+}
+function renderPost(){
+  $("voices").innerHTML = voiceBtns();
+  $("platChips").innerHTML = PLATFORMS.map(p => `<button class="chip" data-plat="${p.id}" aria-pressed="${S.plats.includes(p.id)}">${p.name}</button>`).join("");
+  const sel = $("postLang");
+  if (!sel.options.length) sel.innerHTML = `<option value="same">Same as the video</option>` + Object.entries(LANGS).map(([k, n]) => `<option value="${k}">${n}</option>`).join("");
+  sel.value = S.postLang;
+  renderPosts();
+}
+$("voices").addEventListener("click", e => { const b = e.target.closest("[data-voice]"); if (b){ S.voice = b.dataset.voice; save(); renderPost(); } });
+$("platChips").addEventListener("click", e => {
+  const b = e.target.closest("[data-plat]"); if (!b) return; const k = b.dataset.plat;
+  S.plats = S.plats.includes(k) ? S.plats.filter(x => x !== k) : [...S.plats, k]; save(); renderPost();
+});
+$("postLang").onchange = e => { S.postLang = e.target.value; save(); };
+function bibleFor(id){
+  const v = BIBLE.voices[id];
+  return `VOICE: ${v.name}. Identity: "${v.line}" Tone: ${v.tone}\n\nHOUSE RULES:\n${BIBLE.rules}\n\nCHANNELS:\n${BIBLE.channels}\n\nGLOSSARY (keep = never translate):\n${BIBLE.glossary}`;
+}
+function renderPosts(){
+  const P = S.posts, out = $("postOut");
+  if (!P){ out.innerHTML = ""; return; }
+  const plats = PLATFORMS.filter(p => P.posts && typeof P.posts[p.id] === "string");
+  out.innerHTML = `
+    <div class="statement">
+      <div class="card"><span class="label">Statement</span><p class="big">${esc(P.statement || "")}</p><p class="why">${esc(P.footer || "")}</p></div>
+      <div class="card stack"><span class="label">Thumbnail line</span><p class="big">${esc(P.thumbnail || "")}</p><div class="row"><span class="sp"></span><button class="btn" id="useThumb">Use in Frames</button></div></div>
+    </div>
+    <div class="posts">${plats.map(p => {
+      const t = P.posts[p.id]; return `<article class="card post">
+        <header><b>${p.name}</b><span class="n${t.length > p.max ? " over" : ""}" id="n-${p.id}">${t.length.toLocaleString()} / ${p.max.toLocaleString()}</span>
+        <button class="btn icon" data-copy="${p.id}" aria-label="Copy ${p.name} post"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg></button></header>
+        <div class="body" contenteditable="plaintext-only" data-post="${p.id}">${esc(t)}</div></article>`;
+    }).join("")}</div>`;
+}
+$("postOut").addEventListener("click", async e => {
+  if (e.target.closest("#useThumb")){ S.thumbText = S.posts.thumbnail || ""; $("thumbText").value = S.thumbText; save(); go("frames"); return; }
+  const b = e.target.closest("[data-copy]"); if (!b) return;
+  try { await navigator.clipboard.writeText(S.posts.posts[b.dataset.copy]); toast("Copied"); } catch { toast("Copy is blocked here. Select the text instead."); }
+});
+$("postOut").addEventListener("input", e => {
+  const el = e.target.closest("[data-post]"); if (!el) return;
+  const id = el.dataset.post, t = el.innerText; S.posts.posts[id] = t;
+  const p = PLATFORMS.find(x => x.id === id), n = $("n-" + id);
+  n.textContent = `${t.length.toLocaleString()} / ${p.max.toLocaleString()}`; n.classList.toggle("over", t.length > p.max); save();
+});
+$("btnWrite").onclick = async () => {
+  if (!needClaude()) return;
+  const plats = PLATFORMS.filter(p => S.plats.includes(p.id));
+  if (!plats.length){ toast("Pick at least one platform."); return; }
+  const story = $("story").value.trim(), link = $("link").value.trim();
+  const transcript = S.cues.map(c => c.t).join(" ").slice(0, 60000);
+  if (!story && !transcript){ toast("Add a story or a transcript first."); return; }
+  const lang = S.postLang === "same" ? "the language of the transcript" : LANGS[S.postLang];
+  const prompt = `You write social posts for a video, following this brand bible exactly.
+
+${bibleFor(S.voice)}
+
+Write in ${lang}. Platforms: ${plats.map(p => `${p.name} (max ${p.max} characters)`).join(", ")}.
+${link ? `Video link to include where it fits: ${link}\n` : ""}${story ? `\nSTORY / ANGLE FROM THE AUTHOR:\n${story}\n` : ""}
+${transcript ? `\nVIDEO TRANSCRIPT:\n${transcript}\n` : ""}
+Reply with only JSON in this shape:
+{"statement":"eight words or fewer","footer":"place, date or programme","thumbnail":"four words maximum","posts":{${plats.map(p => `"${p.id}":"..."`).join(",")}}}`;
+  const ctl = startJob("Writing posts"); setProg(.3);
+  try {
+    const r = await sample.json(prompt, { signal: ctl.signal });
+    if (!r || typeof r !== "object" || !r.posts) throw { code:"invalid_json" };
+    S.posts = r; if (r.thumbnail && !S.thumbText) S.thumbText = r.thumbnail;
+    toast("Posts ready");
+  } catch (e){ if (e && e.code !== "cancelled") toast(errCopy(e)); }
+  finally { endJob(); save(); render(); }
+};
+
+/* ---------- Frames: 10 strongest frames ---------- */
+function setVideo(file){
+  if (S.video) URL.revokeObjectURL(S.video.url);
+  const url = URL.createObjectURL(file), v = $("vid");
+  S.video = { url, name:file.name, dur:0, w:0, h:0 }; S.frames = []; S.pick = 0; S.why = "";
+  v.onloadedmetadata = () => { if (!S.video) return; S.video.dur = v.duration; S.video.w = v.videoWidth; S.video.h = v.videoHeight; render(); };
+  v.onerror = () => { toast("This video does not play in the browser. Export an .mp4 (H.264) and try again."); S.video = null; render(); };
+  v.src = url; v.load();
+}
+function seek(v, t){
+  return new Promise(res => {
+    let done = false; const fin = () => { if (done) return; done = true; v.removeEventListener("seeked", fin); res(); };
+    v.addEventListener("seeked", fin); setTimeout(fin, 5000); v.currentTime = t;
+  });
+}
+function analyse(ctx, W, H){
+  const d = ctx.getImageData(0, 0, W, H).data, g = new Float32Array(W * H);
+  let sum = 0;
+  for (let i = 0; i < W * H; i++){ const y = 0.299 * d[i*4] + 0.587 * d[i*4+1] + 0.114 * d[i*4+2]; g[i] = y; sum += y; }
+  const mean = sum / (W * H); let v = 0, lap = 0, lapSq = 0, n = 0;
+  for (let i = 0; i < W * H; i++) v += (g[i] - mean) ** 2;
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++){
+    const i = y * W + x, L = 4 * g[i] - g[i-1] - g[i+1] - g[i-W] - g[i+W]; lap += L; lapSq += L * L; n++;
+  }
+  const sharp = lapSq / n - (lap / n) ** 2, std = Math.sqrt(v / (W * H));
+  const sig = []; const bx = W / 16, by = H / 9;
+  for (let y = 0; y < 9; y++) for (let x = 0; x < 16; x++) sig.push(g[Math.floor((y + .5) * by) * W + Math.floor((x + .5) * bx)]);
+  const expo = mean < 30 || mean > 230 ? 0.15 : mean < 55 || mean > 205 ? 0.6 : 1;
+  /* flat dark frames with little detail are black screens or credit rolls */
+  const flat = mean < 45 && std < 40;
+  return { score: Math.sqrt(sharp) * expo * (0.4 + Math.min(std, 70) / 70), sig, weak: expo < 0.5 || flat };
+}
+const sigDiff = (a, b) => a.reduce((s, x, i) => s + Math.abs(x - b[i]), 0) / a.length;
+$("btnFind").onclick = async () => {
+  const v = $("vid"); if (!S.video || !S.video.dur){ toast("The video is still loading."); return; }
+  const ctl = startJob("Scanning"), signal = ctl.signal;
+  try {
+    const K = 50, d = S.video.dur, a = d * 0.02, z = d * 0.98;
+    const sc = document.createElement("canvas"); sc.width = 160; sc.height = 90;
+    const sx = sc.getContext("2d", { willReadFrequently:true });
+    const cands = [];
+    for (let i = 0; i < K; i++){
+      if (signal.aborted) throw { code:"cancelled" };
+      const t = a + (z - a) * (i + 0.5) / K; await seek(v, t);
+      sx.drawImage(v, 0, 0, 160, 90); cands.push({ t, ...analyse(sx, 160, 90) });
+      setProg((i + 1) / K * 0.8, `Scanning ${i + 1} / ${K}`);
+    }
+    const picks = [], fresh = c => !picks.includes(c) && !c.weak && picks.every(p => sigDiff(p.sig, c.sig) > 7);
+    for (let k = 0; k < 10; k++){
+      const seg = cands.slice(Math.floor(k * K / 10), Math.floor((k + 1) * K / 10)).sort((x, y) => y.score - x.score);
+      /* a segment of black or credits borrows the best unused frame from anywhere */
+      const pool = [...cands].sort((x, y) => y.score - x.score);
+      picks.push(seg.find(fresh) || pool.find(fresh) || seg.find(c => !picks.includes(c)) || seg[0]);
+    }
+    picks.sort((x, y) => x.t - y.t);
+    const W = Math.min(1920, S.video.w || 1280), H = Math.round(W * (S.video.h || 720) / (S.video.w || 1280));
+    S.frames = [];
+    for (let k = 0; k < picks.length; k++){
+      if (signal.aborted) throw { code:"cancelled" };
+      await seek(v, picks[k].t);
+      const c = document.createElement("canvas"); c.width = W; c.height = H; c.getContext("2d").drawImage(v, 0, 0, W, H);
+      const s = document.createElement("canvas"); s.width = 480; s.height = Math.round(480 * H / W); s.getContext("2d").drawImage(c, 0, 0, s.width, s.height);
+      S.frames.push({ t:picks[k].t, canvas:c, thumb:s.toDataURL("image/jpeg", 0.8), score:picks[k].score });
+      setProg(0.8 + (k + 1) / picks.length * 0.2, `Keeping ${k + 1} / 10`);
+    }
+    const best = S.frames.reduce((b, f, i) => f.score > S.frames[b].score ? i : b, 0);
+    S.pick = best; toast("10 frames kept");
+  } catch (e){
+    if (e && e.code === "cancelled") toast("Stopped");
+    else toast("Could not read frames from this video.");
+  } finally { endJob(); render(); }
+};
+function renderFrames(){
+  const has = !!S.video;
+  $("dropVid").hidden = has; $("framesOn").hidden = !has;
+  $("btnReload").hidden = has || !S.job || !mcp;
+  $("btnFind").hidden = !!(S.video && S.video.helper);
+  $("btnNewVid").hidden = !!(S.video && S.video.helper);
+  if (!has) return;
+  const d = S.video.dur || 0;
+  $("vidStat").innerHTML = `<div><b>${d ? shortTC(d) : "…"}</b><span>length</span></div><div><b>${S.video.w ? S.video.w + "×" + S.video.h : "…"}</b><span>size</span></div>`;
+  $("tlEnd").textContent = d ? shortTC(d) : "";
+  $("timeline").querySelectorAll("i").forEach(n => n.remove());
+  S.frames.forEach((f, i) => { const m = document.createElement("i"); m.style.left = (f.t / d * 100) + "%"; if (i === S.pick) m.className = "on"; $("timeline").appendChild(m); });
+  $("btnFind").textContent = S.frames.length ? "Scan again" : "Find 10 frames";
+  $("grid10").innerHTML = S.frames.length
+    ? S.frames.map((f, i) => `<button class="fr${i === S.pick ? " on" : ""}" data-f="${i}" aria-label="Frame at ${shortTC(f.t)}"><img src="${f.thumb}" alt=""></button>`).join("")
+    : Array.from({ length:10 }, (_, i) => `<div class="fr ghost">${String(i + 1).padStart(2, "0")}</div>`).join("");
+  $("composer").hidden = !S.frames.length;
+  $("fmtChips").querySelectorAll("[data-fmt]").forEach(b => b.setAttribute("aria-pressed", b.dataset.fmt === S.fmt));
+  if ($("thumbText").value === "" && S.thumbText) $("thumbText").value = S.thumbText;
+  $("voiceMini").innerHTML = voiceBtns("data-vm");
+  $("why").hidden = !S.why; $("why").textContent = S.why;
+  if (S.frames.length) drawThumb();
+}
+$("grid10").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (b){ S.pick = +b.dataset.f; renderFrames(); } });
+$("fmtChips").addEventListener("click", e => { const b = e.target.closest("[data-fmt]"); if (b){ S.fmt = b.dataset.fmt; save(); renderFrames(); } });
+$("voiceMini").addEventListener("click", e => { const b = e.target.closest("[data-vm]"); if (b){ S.voice = b.dataset.vm; save(); renderFrames(); } });
+$("thumbText").addEventListener("input", e => { S.thumbText = e.target.value; save(); drawThumb(); });
+$("btnNewVid").onclick = () => $("vidIn").click();
+$("btnReload").onclick = async () => {
+  if (!mcp || !S.job || job) return;
+  const ctl = startJob("Loading frames");
+  try {
+    const r = await readHelper("result", { job: S.job });
+    await loadFrames(S.job, r, p => setProg(p));
+    if (ctl.signal.aborted) return;
+    toast("Frames loaded");
+  } catch (e){ toast(helperErr(e)); }
+  finally { endJob(); render(); }
+};
+
+function lineWrap(x, words, max){
+  const lines = []; let cur = "";
+  for (const w of words){ const t = cur ? cur + " " + w : w; if (x.measureText(t).width > max && cur){ lines.push(cur); cur = w; } else cur = t; }
+  if (cur) lines.push(cur); return lines;
+}
+let drawN = 0;
+async function drawThumb(){
+  const n = ++drawN, f = S.frames[S.pick]; if (!f) return;
+  const c = $("thumb"), tall = S.fmt === "916", W = tall ? 1080 : 1280, H = tall ? 1920 : 720;
+  $("cbox").classList.toggle("tall", tall);
+  try { await document.fonts.load('800 100px "Bricolage Grotesque"'); await document.fonts.load('600 30px "Geist"'); } catch {}
+  if (n !== drawN) return;
+  c.width = W; c.height = H; const x = c.getContext("2d"), src = f.canvas;
+  const r = Math.max(W / src.width, H / src.height), sw = W / r, sh = H / r;
+  x.drawImage(src, (src.width - sw) / 2, (src.height - sh) / 2, sw, sh, 0, 0, W, H);
+  const text = (S.thumbText || "").trim().toUpperCase(), col = VOICE_COLOR[S.voice], m = Math.round(W * 0.06);
+  if (text){
+    const g = x.createLinearGradient(0, H * 0.35, 0, H); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.8)");
+    x.fillStyle = g; x.fillRect(0, H * 0.35, W, H * 0.65);
+    const words = text.split(/\s+/); let size = tall ? 150 : 128, lines;
+    for (;;){ x.font = `800 ${size}px "Bricolage Grotesque", system-ui, sans-serif`; lines = lineWrap(x, words, W - 2 * m);
+      if ((lines.length <= 3 && lines.every(l => x.measureText(l).width <= W - 2 * m)) || size <= 48) break; size -= 6; }
+    const lh = size * 0.98, base = tall ? H * 0.74 : H - m;
+    let y = base - (lines.length - 1) * lh; x.textBaseline = "alphabetic"; x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = 24;
+    lines.forEach((l, li) => {
+      const ws = l.split(" "); let cx = m;
+      ws.forEach((w, wi) => {
+        const last = li === lines.length - 1 && wi === ws.length - 1 && words.length > 1;
+        x.fillStyle = last ? col.mark : "#ffffff"; x.fillText(w, cx, y); cx += x.measureText(w + " ").width;
+      });
+      y += lh;
+    });
+    x.shadowBlur = 0;
+  }
+  if (S.voice !== "lude"){
+    const img = await logoImage(S.voice);
+    if (n !== drawN || !img) return;
+    const h = S.voice === "oye" ? (tall ? 70 : 52) : (tall ? 150 : 104);
+    const w = h * (S.voice === "ponadto" ? 1330 / 1140 : S.voice === "oye" ? 1148 / 391 : img.width / img.height);
+    const ty = tall ? H * 0.1 : m * 0.8;
+    x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 18;
+    x.drawImage(img, m, ty, w, h);
+    x.shadowBlur = 0;
+  }
+}
+$("btnPng").onclick = () => {
+  if (!S.frames.length) return;
+  if (!downloads){ toast("Saving files works on claude.ai."); return; }
+  $("thumb").toBlob(async blob => {
+    const base = (S.video.name || "video").replace(/\.[^.]+$/, "");
+    try { await downloads.save({ filename:`${base}-thumbnail-${S.fmt === "916" ? "9x16" : "16x9"}.png`, data:blob }); toast("Saved"); }
+    catch (e){ if (e && e.code !== "declined") toast("Could not save the image."); }
+  }, "image/png");
+};
+$("btnPick").onclick = async () => {
+  if (!needClaude() || !S.frames.length) return;
+  const lim = await sample.limits().catch(() => null);
+  if (!lim || !lim.images){ toast("This view cannot send images to Claude."); return; }
+  const max = Math.min(S.frames.length, lim.images.maxCount);
+  const idx = Array.from({ length:max }, (_, k) => Math.round(k * (S.frames.length - 1) / Math.max(1, max - 1)));
+  const blobs = await Promise.all(idx.map(i => new Promise(res => {
+    const s = document.createElement("canvas"); s.width = 768; s.height = Math.round(768 * S.frames[i].canvas.height / S.frames[i].canvas.width);
+    s.getContext("2d").drawImage(S.frames[i].canvas, 0, 0, s.width, s.height); s.toBlob(res, "image/jpeg", 0.82);
+  })));
+  const transcript = S.cues.map(c => c.t).join(" ").slice(0, 8000);
+  const prompt = `These ${max} images are frames from one video, in time order, numbered 1 to ${max}. Pick the best YouTube thumbnail: a clear face or human moment, sharp, readable at small size, room for text. Then write the thumbnail text.
+
+${bibleFor(S.voice)}
+${transcript ? `\nTRANSCRIPT EXCERPT:\n${transcript}\n` : ""}
+Thumbnail text: four words maximum, in the transcript's language, no venture name.
+Reply with only JSON: {"best": number, "text": "...", "why": "one short sentence"}`;
+  const ctl = startJob("Claude is looking"); setProg(.35);
+  try {
+    const r = await sample.json(prompt, { images:blobs, signal:ctl.signal });
+    const b = Math.round(Number(r && r.best)); if (b >= 1 && b <= max) S.pick = idx[b - 1];
+    if (r && typeof r.text === "string"){ S.thumbText = r.text; $("thumbText").value = r.text; }
+    S.why = r && typeof r.why === "string" ? r.why : ""; save();
+  } catch (e){ if (e && e.code !== "cancelled") toast(errCopy(e)); }
+  finally { endJob(); render(); }
+};
+
+/* ---------- Bible ---------- */
+function renderBible(){
+  $("bRules").value = BIBLE.rules; $("bChannels").value = BIBLE.channels; $("bGloss").value = BIBLE.glossary;
+  $("bVoices").innerHTML = Object.entries(BIBLE.voices).map(([id, v]) =>
+    `<label for="bv-${id}" class="v-${id}">${logoHTML(id)}</label><textarea class="field" id="bv-${id}">${esc(v.tone)}</textarea>`).join("");
+}
+$("btnSaveBible").onclick = () => {
+  BIBLE.rules = $("bRules").value; BIBLE.channels = $("bChannels").value; BIBLE.glossary = $("bGloss").value;
+  for (const id of Object.keys(BIBLE.voices)){ const t = $("bv-" + id); if (t) BIBLE.voices[id].tone = t.value; }
+  try { localStorage.setItem("cs-bible", JSON.stringify(BIBLE)); toast("Bible saved on this device"); } catch { toast("Saved for this session only."); }
+};
+$("btnReset").onclick = () => { BIBLE = JSON.parse(JSON.stringify(DEFAULT_BIBLE)); try { localStorage.removeItem("cs-bible"); } catch {} renderBible(); toast("Back to the defaults"); };
+
+/* ---------- Boot ---------- */
+const start = (location.hash || "").slice(1);
+go(TITLES[start] ? start : "words");
+</script>

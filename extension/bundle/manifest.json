@@ -1,0 +1,73 @@
+{
+  "manifest_version": "0.3",
+  "name": "creator-studio",
+  "display_name": "creator-studio",
+  "version": "1.2.0",
+  "description": "Video link or audio file to transcript (.srt) and the 10 strongest frames, for Creator Studio. Runs on this Mac.",
+  "author": {
+    "name": "Fundacja Po-Nad-To",
+    "url": "https://ponadto.foundation"
+  },
+  "icon": "icon.png",
+  "user_config": {
+    "folder": {
+      "type": "directory",
+      "title": "Creator Studio folder",
+      "description": "The folder where you put Creator Studio: it holds server.py and the .venv folder made during setup.",
+      "required": true
+    }
+  },
+  "server": {
+    "type": "python",
+    "entry_point": "launch.py",
+    "mcp_config": {
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        "exec \"$CREATOR_STUDIO_DIR/.venv/bin/python\" \"$CREATOR_STUDIO_DIR/server.py\""
+      ],
+      "env": {
+        "CREATOR_STUDIO_DIR": "${user_config.folder}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "start",
+      "description": "Process a video link, file path or uploaded audio"
+    },
+    {
+      "name": "status",
+      "description": "Progress of a job"
+    },
+    {
+      "name": "partial",
+      "description": "Transcript so far of a running job"
+    },
+    {
+      "name": "result",
+      "description": "Transcript and frames of a finished job"
+    },
+    {
+      "name": "frame",
+      "description": "One of the 10 frames as JPEG"
+    },
+    {
+      "name": "recent",
+      "description": "Recent finished jobs"
+    },
+    {
+      "name": "upload_begin",
+      "description": "Prepare an audio upload"
+    },
+    {
+      "name": "upload_chunk",
+      "description": "Receive part of an audio upload"
+    }
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin"
+    ]
+  }
+}

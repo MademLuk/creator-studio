@@ -1,0 +1,6 @@
+mcp>=1.9,<2
+yt-dlp
+mlx-whisper
+imageio-ffmpeg
+numpy
+pillow

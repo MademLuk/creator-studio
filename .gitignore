@@ -1,0 +1,17 @@
+# Python environment (rebuild with: python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt)
+.venv/
+__pycache__/
+*.pyc
+
+# Downloaded videos, transcripts and frames: personal media, stays on this Mac
+jobs/
+
+# Generated test media (recreate with macOS `say`, see test/smoke.py)
+test/*.mp4
+test/*.aiff
+test/*.wav
+test/*.mp3
+
+# Helper files
+studio/favicon.txt
+.DS_Store
