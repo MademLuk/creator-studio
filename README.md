@@ -73,3 +73,15 @@ python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
 No path is written into the files: the extension asks for the folder at install. If the folder moves, reinstall the extension and choose the new place.
+
+## Desktop apps (macOS)
+
+`launchers/` holds the sources of two small apps installed in /Applications (built with `osacompile`, icon copied over `Contents/Resources/applet.icns`):
+
+- **Creator Studio.app**: opens the studio inside the Claude desktop app via its own link scheme
+  (`claude://claude.ai/artifact/<id>`), so the Mac helper is available. Icon: the Ludizm mark inside a play shape
+  (`cs-A.svg` outline, `cs-B.svg` filled; drawn from the Ludizm vector paths, unchanged).
+- **KIUB Dashboard.app**: opens `00_KIUB_DASHBOARD.html` as a chromeless Brave window
+  (`Brave Browser --app=file://…`, launched from the binary so it reaches a running Brave). Icon: the dashboard page's own icon.
+
+Rebuild: `osacompile -o "/Applications/<Name>.app" launchers/<name>.applescript`, then copy the `.icns` over `applet.icns`.
